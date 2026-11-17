@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Missione Luxia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Missione Luxia — standalone. Regia (no params) = projector + question editor; ?g=<code> = player phone. */
+:root{
+  --void:#060918; --nebula:#10163A; --panel:#161E4A; --panel2:#1E2860; --line:#2E3A7A;
+  --ink:#EEF1FF; --dim:#9AA3D1; --luce:#FFC857; --ion:#6EE7F9; --detour:#FF6B6B; --ok:#7CF29A;
+  --f-display:"Chakra Petch","Trebuchet MS",sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--void);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+.sky{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(1200px 700px at 85% -10%,rgba(110,231,249,.10),transparent 60%),radial-gradient(900px 600px at -10% 110%,rgba(255,200,87,.09),transparent 60%),var(--void)}
+.sky::before,.sky::after{content:"";position:absolute;inset:0;background-repeat:repeat}
+.sky::before{background-image:radial-gradient(1px 1px at 20px 30px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 140px 90px,#cfd6ff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 80px 160px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 190px 200px,#fff 50%,transparent 51%);background-size:220px 220px;opacity:.55}
+.sky::after{background-image:radial-gradient(1.5px 1.5px at 60px 50px,#FFE3A3 50%,transparent 51%),radial-gradient(1px 1px at 260px 140px,#fff 50%,transparent 51%),radial-gradient(2px 2px at 330px 300px,#B9F4FF 50%,transparent 51%);background-size:380px 380px;opacity:.5;animation:twinkle 6s ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:.25}to{opacity:.7}}
+#app{position:relative;z-index:1;min-height:100%;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:.01em}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ion)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--dim)}
+a{color:var(--ion)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--ion);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:999px;font-weight:800;background:var(--luce);color:#1A1300;text-decoration:none;transition:transform .15s,box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 30px -6px rgba(255,200,87,.6)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ion);box-shadow:none}
+.btn.danger{background:transparent;color:var(--detour);border:1px solid rgba(255,107,107,.5)}
+.btn.sm{padding:8px 14px;font-size:14px}
+input[type=text],input[type=number],textarea{width:100%;background:var(--nebula);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font:inherit}
+textarea{resize:vertical}
+
+/* Player */
+.phone{min-height:100vh;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px;padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;letter-spacing:.06em}
+.brand b{color:var(--luce)}
+.card{background:linear-gradient(180deg,var(--panel),var(--nebula));border:1px solid var(--line);border-radius:22px;padding:22px}
+.center{text-align:center}
+.stack{display:flex;flex-direction:column;gap:14px}
+.astro-hero{display:flex;justify-content:center}
+.astro-hero svg{width:120px;height:auto;filter:drop-shadow(0 10px 30px rgba(110,231,249,.25));animation:float 4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.sw{width:40px;height:40px;border-radius:50%;border:3px solid transparent;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.sw[aria-pressed=true]{border-color:var(--ink)}
+.label{font-size:13px;color:var(--dim);font-weight:600}
+.status{display:flex;align-items:center;gap:12px}
+.status .who{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.status .who span{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{width:32px;height:auto;flex:none}
+.track{height:10px;border-radius:999px;background:var(--nebula);border:1px solid var(--line);overflow:hidden}
+.track i{display:block;height:100%;background:linear-gradient(90deg,var(--ion),var(--luce));border-radius:999px;transition:width .6s}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;font-family:var(--f-mono);letter-spacing:.04em;white-space:nowrap}
+.pill.detour{background:rgba(255,107,107,.15);color:var(--detour);border:1px solid rgba(255,107,107,.4)}
+.pill.main{background:rgba(110,231,249,.12);color:var(--ion);border:1px solid rgba(110,231,249,.35)}
+.pill.done{background:rgba(255,200,87,.15);color:var(--luce);border:1px solid rgba(255,200,87,.4)}
+.pill.bot{background:rgba(154,163,209,.15);color:var(--dim);border:1px solid var(--line)}
+.question{font-family:var(--f-display);font-size:23px;line-height:1.25;font-weight:700}
+.answers{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.answers .ans{flex-direction:column;justify-content:center;text-align:center;min-height:130px;font-size:19px}
+.ans{display:flex;align-items:center;gap:14px;text-align:left;padding:16px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);font-weight:600;font-size:17px;transition:transform .1s,border-color .2s}
+.ans:active{transform:scale(.98)}
+.ans .k{flex:none;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;background:var(--nebula);color:var(--ion)}
+.ans.right{border-color:var(--ok);background:rgba(124,242,154,.14)}
+.ans.wrong{border-color:var(--detour);background:rgba(255,107,107,.14)}
+.ans.sel{border-color:var(--ion)}
+.ans:disabled{cursor:default}
+.fb{border-radius:16px;padding:14px 16px;font-weight:800}
+.fb.ok{background:rgba(124,242,154,.12);color:var(--ok)}
+.fb.ko{background:rgba(255,107,107,.12);color:var(--detour)}
+.big-count{font-family:var(--f-display);font-size:96px;font-weight:700;color:var(--luce);line-height:1;text-shadow:0 0 40px rgba(255,200,87,.5)}
+
+/* Regia */
+.hostbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:10px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line);background:rgba(16,22,58,.75);position:relative;z-index:3}
+.tabs{display:flex;gap:6px}
+.tab{padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--dim);border:1px solid transparent}
+.tab[aria-selected=true]{color:var(--ink);border-color:var(--line);background:var(--panel)}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.netdot{width:9px;height:9px;border-radius:50%;background:var(--dim);display:inline-block}
+.netdot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.netdot.err{background:var(--detour)}
+.stage{height:calc(100vh - 62px);min-height:520px;position:relative}
+.race{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 330px}
+.race-main{position:relative;display:flex;flex-direction:column;min-width:0;padding-block:16px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:16px}
+.race-main h1{font-size:30px}
+.race-main h1 b,.lobby h1 b{color:var(--luce)}
+.board{flex:1;min-height:0}
+.board svg{width:100%;height:100%;display:block}
+.side{border-left:1px solid var(--line);background:rgba(16,22,58,.7);display:flex;flex-direction:column;min-height:0;padding-block:16px;padding-left:18px;padding-right:max(18px,env(safe-area-inset-right,0px))}
+.side h2{font-size:18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+.crew{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0;flex:1}
+.crew li{display:grid;grid-template-columns:26px 32px minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:rgba(30,40,96,.5)}
+.crew .rk{font-family:var(--f-mono);font-weight:700;color:var(--dim);text-align:center}
+.crew li:first-child .rk{color:var(--luce)}
+.crew .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crew .pr{font-family:var(--f-mono);font-size:13px;color:var(--dim)}
+.qr{background:#fff;border-radius:12px}
+.qr img,.qr canvas{width:100%!important;height:100%!important;display:block}
+.qr-mini{margin-top:14px;display:flex;gap:12px;align-items:center;font-size:13px;color:var(--dim)}
+.qr-mini .qr{padding:6px;width:88px;height:88px;flex:none}
+.pl{transition:transform 1.1s cubic-bezier(.55,0,.2,1)}
+.bob{animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(6,9,24,.72);z-index:5;text-align:center}
+.overlay .big-count{font-size:220px}
+.banner{position:absolute;left:50%;top:70px;transform:translateX(-50%);z-index:4;background:linear-gradient(90deg,#FFC857,#FFE296);color:#1A1300;padding:12px 26px;border-radius:999px;font-family:var(--f-display);font-weight:700;font-size:24px;box-shadow:0 10px 50px -10px rgba(255,200,87,.8);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.lobby{height:100%;display:grid;grid-template-columns:auto minmax(0,1fr);gap:48px;align-items:center;padding-block:28px;padding-left:max(48px,env(safe-area-inset-left,0px));padding-right:max(48px,env(safe-area-inset-right,0px))}
+.lobby .qr-big{padding:18px;width:min(46vh,380px);aspect-ratio:1;max-width:100%;box-shadow:0 0 80px -10px rgba(110,231,249,.5)}
+.lobby h1{font-size:clamp(40px,6vw,84px);line-height:.95}
+.joinurl{font-family:var(--f-mono);font-size:13px;color:var(--dim);margin-top:12px;word-break:break-all;max-width:380px}
+.joined{display:flex;flex-wrap:wrap;gap:14px 10px;margin-top:20px;max-height:40vh;overflow:auto}
+.joined .j{display:flex;flex-direction:column;align-items:center;width:84px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+.joined .j svg{width:52px;height:auto;animation:float 4s ease-in-out infinite}
+.joined .j span{font-size:13px;font-weight:700;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.count{font-family:var(--f-display);font-size:28px;margin-top:16px}
+.count b{color:var(--ion)}
+.warn{margin-top:14px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,200,87,.4);background:rgba(255,200,87,.08);font-size:14px;max-width:60ch}
+.podium{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;text-align:center;padding:24px 16px}
+.podium h1{font-size:clamp(36px,5vw,64px)}
+.steps{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;justify-content:center}
+.step{display:flex;flex-direction:column;align-items:center;gap:8px;width:180px}
+.step svg{width:90px;height:auto;animation:float 4s ease-in-out infinite}
+.step .blk{width:100%;border-radius:16px 16px 0 0;background:linear-gradient(180deg,var(--panel2),var(--nebula));border:1px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-size:42px;font-weight:700}
+.step.p1 .blk{height:180px;color:var(--luce);border-color:rgba(255,200,87,.6)}
+.step.p2 .blk{height:130px;color:var(--ion)}
+.step.p3 .blk{height:96px;color:var(--dim)}
+.step .nm{font-weight:800;font-size:20px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px;padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.admin h1{font-size:30px}
+.qedit{display:flex;flex-direction:column;gap:10px}
+.qedit .opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:8px}
+.opt input[type=radio]{accent-color:var(--ok);width:20px;height:20px;flex:none}
+.settings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--ion);padding:10px 18px;border-radius:999px;z-index:20;font-weight:700;max-width:90vw;text-align:center}
+@media (max-width:900px){
+  .stage{height:auto}
+  .race{grid-template-columns:1fr}
+  .board{min-height:62vw}
+  .side{border-left:0;border-top:1px solid var(--line)}
+  .lobby{grid-template-columns:1fr;gap:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .lobby .qr-big{width:min(80vw,320px)}
+  .overlay .big-count{font-size:120px}
+  .banner{font-size:16px}
+}
+@media (max-width:560px){.qedit .opts,.settings{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="sky"></div>
+<div id="app"></div>
+<script>
+"use strict";
+// ================= shared =================
+const COLORS = ["#FFC857","#6EE7F9","#FF7AB6","#9B8CFF","#7CF29A","#FF8A4C","#4DA3FF","#F25C54","#E9EEFF","#C6F35B"];
+const NS = "http://www.w3.org/2000/svg";
+const $app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+const GAME = params.get("g");
+// optional: own PeerJS server, e.g. ?srv=myhost:9000 (default: free PeerJS cloud)
+const SRV = params.get("srv");
+function peerOpts() {
+  if (!SRV) return { debug: 1 };
+  const [host, port] = SRV.split(":");
+  return { host, port: +port || 443, path: "/", secure: location.protocol === "https:" && !/^(localhost|127\.)/.test(host), debug: 1 };
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const rid = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
+function toast(msg) { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2600); }
+function astro(color, cls = "") {
+  return `<svg class="${cls}" viewBox="0 0 64 76" aria-hidden="true">${astroBody(color)}</svg>`;
+}
+function astroBody(color) {
+  return `<rect x="13" y="28" width="38" height="26" rx="9" fill="#AEB8E6"/>
+    <rect x="6" y="34" width="14" height="9" rx="4.5" fill="#E6EAFF" transform="rotate(-18 13 38)"/>
+    <rect x="44" y="34" width="14" height="9" rx="4.5" fill="#E6EAFF" transform="rotate(18 51 38)"/>
+    <rect x="18" y="30" width="28" height="28" rx="11" fill="#F4F6FF"/>
+    <rect x="18" y="41" width="28" height="5" fill="${color}"/>
+    <rect x="22" y="54" width="9" height="15" rx="4" fill="#E6EAFF"/><rect x="33" y="54" width="9" height="15" rx="4" fill="#E6EAFF"/>
+    <rect x="21" y="65" width="11" height="6" rx="3" fill="#6B76B5"/><rect x="32" y="65" width="11" height="6" rx="3" fill="#6B76B5"/>
+    <line x1="44" y1="9" x2="48" y2="1" stroke="#E6EAFF" stroke-width="2" stroke-linecap="round"/><circle cx="48" cy="1.5" r="2.2" fill="${color}"/>
+    <circle cx="32" cy="21" r="17" fill="#F4F6FF"/>
+    <ellipse cx="33" cy="22" rx="12.5" ry="9.5" fill="${color}" stroke="rgba(0,0,0,.18)" stroke-width="1.2"/>
+    <ellipse cx="28" cy="18.5" rx="4.5" ry="2.6" fill="#fff" opacity=".65"/>`;
+}
+const hashStr = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+
+if (GAME) Player(); else Host();
+
+// ================= HOST (regia + proiettore) =================
+function Host() {
+  const SAMPLE = [
+    {q:"[Esempio] Luxia è stata fondata nel 2018?",a:["Vero","Falso"],c:0},
+    {q:"[Esempio] Qual è il valore guida di Luxia?",a:["Fare luce sulle scelte","Crescere a ogni costo"],c:0},
+    {q:"[Esempio] Quanti uffici ha Luxia in Italia?",a:["2","3"],c:1},
+    {q:"[Esempio] Di che colore è il logo Luxia?",a:["Verde","Ambra"],c:1},
+    {q:"[Esempio] Come si chiama il rito del lunedì mattina?",a:["Caffè lunare","Stand-up di rotta"],c:1},
+    {q:"[Esempio] Il piano 2027 punta prima sull'estero o sull'Italia?",a:["Estero","Italia"],c:0},
+    {q:"[Esempio] Quante persone lavorano oggi in Luxia?",a:["Circa 20","Circa 50"],c:0},
+    {q:"[Esempio] Qual è stato il primo prodotto lanciato da Luxia?",a:["Luxia Beam","Luxia Orbit"],c:0},
+    {q:"[Esempio] Il primo Strategy Day si è tenuto a Milano?",a:["Vero","Falso"],c:0},
+    {q:"[Esempio] Qual è il canale per le comunicazioni interne?",a:["Slack","Email"],c:0},
+    {q:"[Esempio] Luxia ha più di 150 clienti attivi?",a:["Vero","Falso"],c:0},
+    {q:"[Esempio] Cosa significa il nome Luxia?",a:["Lusso","Luce"],c:1},
+    {q:"[Esempio] Quale mercato vuole aprire Luxia per primo?",a:["Svizzera","Germania"],c:0},
+    {q:"[Esempio] Qual è il KPI più importante del 2026?",a:["Fatturato","Retention clienti"],c:1},
+    {q:"[Esempio] La retrospettiva di team si fa ogni due settimane?",a:["Vero","Falso"],c:0}
+  ];
+  // every question has exactly two answers: keep the right one and the first wrong one
+  const two = q => {
+    const a = (q.a || []).map(x => String(x ?? "").trim()), c = Math.max(0, Math.min(a.length - 1, +q.c || 0));
+    if (a.length <= 2) return { q: String(q.q || ""), a: [a[0] || "", a[1] || ""], c: Math.min(c, 1) };
+    const right = a[c], wrongI = a.findIndex((x, i) => i !== c && x);
+    const keep = [c, wrongI < 0 ? (c ? 0 : 1) : wrongI].sort((x, y) => x - y);
+    return { q: String(q.q || ""), a: keep.map(i => a[i] || ""), c: keep.indexOf(c) };
+  };
+  const H = Object.assign({
+    code: "luxia-" + rid(6), status: "lobby", mainLen: 12, detourLen: 2, penaltySec: 3, startAt: 0,
+    players: {}, questions: SAMPLE
+  }, store.get("luxia.host", {}));
+  if (H.questions.some(q => q.a.length > 2)) {
+    H.questions = H.questions.every(q => q.q.startsWith("[Esempio]")) ? SAMPLE : H.questions.map(two);
+  }
+  const conns = {};            // pid -> DataConnection
+  const bootAt = Date.now();
+  setInterval(() => { if (H.status === "lobby" && tab === "show" && document.getElementById("netwarn")) render(); }, 3000);
+  let tab = "show", peer = null, net = "off", screenKey = "", boardKey = "", nodes = [], loopC = [];
+  let draft = null;
+  const save = () => store.set("luxia.host", H);
+  const joinUrl = () => location.href.split("#")[0].split("?")[0] + "?g=" + encodeURIComponent(H.code) + (SRV ? "&srv=" + encodeURIComponent(SRV) : "");
+  const isLocalFile = location.protocol === "file:";
+  const plist = () => Object.entries(H.players).map(([id, p]) => ({ id, ...p }));
+
+  // ---- networking ----
+  let bc = null;
+  function startLocal() {
+    if (!("BroadcastChannel" in window)) return;
+    try { bc && bc.close(); } catch {}
+    bc = new BroadcastChannel("luxia-" + H.code);
+    bc.onmessage = e => {
+      const d = e.data; if (!d || !d.from || !d.m) return;
+      const pid = String(d.from);
+      const local = { open: true, local: true, send: m => { try { bc.postMessage({ to: pid, m }); } catch {} } };
+      onMsg(local, { ...d.m, pid });
+    };
+  }
+  function startPeer() {
+    if (!window.Peer) { net = "err"; render(true); return; }
+    try { peer && peer.destroy(); } catch {}
+    peer = new Peer(H.code, peerOpts());
+    peer.on("open", () => { net = "on"; render(true); });
+    peer.on("disconnected", () => { net = "off"; render(true); setTimeout(() => { try { peer.reconnect(); } catch {} }, 1500); });
+    peer.on("error", e => {
+      net = "err"; render(true);
+      if (e.type === "unavailable-id") { toast("Riconnessione in corso…"); setTimeout(startPeer, 4000); }
+      else if (e.type === "network" || e.type === "server-error" || e.type === "socket-error") setTimeout(startPeer, 4000);
+    });
+    peer.on("connection", conn => {
+      conn.on("data", msg => onMsg(conn, msg));
+      conn.on("close", () => { for (const k in conns) if (conns[k] === conn) delete conns[k]; });
+    });
+  }
+  function onMsg(conn, m) {
+    if (!m || typeof m !== "object") return;
+    const pid = String(m.pid || "").slice(0, 40); if (!pid) return;
+    if (m.t === "hello") {
+      conns[pid] = conn;
+      if (!H.players[pid] && m.name) {
+        H.players[pid] = newPlayer(String(m.name).slice(0, 14), COLORS.includes(m.color) ? m.color : COLORS[0], false);
+        save(); render();
+      }
+      sendTo(pid);
+    } else if (m.t === "answer") {
+      conns[pid] = conn;
+      const r = doAnswer(pid, m.qi, m.choice);
+      if (r) conn.send({ t: "fb", ...r });
+      sendTo(pid);
+    }
+  }
+  function newPlayer(name, color, bot) {
+    return { name, color, bot, main: 0, detour: 0, qi: 0, correct: 0, wrong: 0, finishedAt: 0, lockUntil: 0, joinedAt: Date.now(), seed: Math.floor(Math.random() * 1e9) };
+  }
+  function currentQ(p) {
+    const n = H.questions.length; if (!n) return null;
+    const cycle = Math.floor(p.qi / n), order = shuffle(n, p.seed + cycle * 7919);
+    return H.questions[order[p.qi % n]];
+  }
+  function shuffle(n, seed) { const a = [...Array(n).keys()]; let s = seed >>> 0 || 1; for (let i = n - 1; i > 0; i--) { s = (Math.imul(s, 1103515245) + 12345) >>> 0; const j = s % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function doAnswer(pid, qi, choice) {
+    const p = H.players[pid], now = Date.now();
+    if (!p || H.status !== "playing" || now < H.startAt || p.finishedAt || qi !== p.qi || now < p.lockUntil) return null;
+    const q = currentQ(p); if (!q) return null;
+    const ok = choice === q.c;
+    p.qi++;
+    if (ok) { p.correct++; if (p.detour > 0) p.detour--; else p.main = Math.min(H.mainLen, p.main + 1); if (p.main >= H.mainLen) p.finishedAt = now; }
+    else { p.wrong++; if (!p.detour) p.detour = H.detourLen; p.lockUntil = now + H.penaltySec * 1000; }
+    save(); render();
+    return { ok, correct: q.c, choice, lockMs: ok ? 0 : H.penaltySec * 1000, detour: p.detour };
+  }
+  function ranked() {
+    return plist().sort((a, b) => {
+      if (a.finishedAt && b.finishedAt) return a.finishedAt - b.finishedAt;
+      if (a.finishedAt) return -1; if (b.finishedAt) return 1;
+      return ((H.mainLen - a.main) + a.detour) - ((H.mainLen - b.main) + b.detour) || a.joinedAt - b.joinedAt;
+    });
+  }
+  function sendTo(pid) {
+    const conn = conns[pid]; if (!conn || !conn.open) return;
+    const p = H.players[pid], now = Date.now();
+    const base = { t: "state", status: H.status, startIn: Math.max(0, H.startAt - now), mainLen: H.mainLen, detourLen: H.detourLen, n: Object.keys(H.players).length };
+    if (!p) { try { conn.send({ ...base, me: null }); } catch {} return; }
+    const rank = ranked().findIndex(x => x.id === pid) + 1;
+    const q = H.status === "playing" && !p.finishedAt ? currentQ(p) : null;
+    try {
+      conn.send({ ...base,
+        me: { name: p.name, color: p.color, main: p.main, detour: p.detour, finished: !!p.finishedAt, rank, correct: p.correct, wrong: p.wrong },
+        q: q ? { qi: p.qi, text: q.q, a: q.a } : null, lockMs: Math.max(0, p.lockUntil - now) });
+    } catch {}
+  }
+  let bcT = null;
+  function broadcast() { clearTimeout(bcT); bcT = setTimeout(() => { for (const pid in conns) sendTo(pid); }, 120); }
+
+  // ---- bots for solo testing ----
+  const BOTN = ["Orbita","Cometa","Nebula","Quasar","Pulsar","Vega","Sirio","Lyra","Draco","Rigel"];
+  function addBots(n) {
+    for (let i = 0; i < n; i++) {
+      const nm = BOTN[(Object.values(H.players).filter(p => p.bot).length) % BOTN.length] + " " + rid(2).toUpperCase();
+      const p = newPlayer(nm, COLORS[Math.floor(Math.random() * COLORS.length)], true);
+      p.nextAt = 0; H.players["bot-" + rid(6)] = p;
+    }
+    save(); render(); broadcast();
+  }
+  setInterval(() => {
+    if (H.status !== "playing") return;
+    const now = Date.now(); if (now < H.startAt) return;
+    for (const [id, p] of Object.entries(H.players)) {
+      if (!p.bot || p.finishedAt) continue;
+      if (!p.nextAt) { p.nextAt = now + 1500 + Math.random() * 4000; continue; }
+      if (now < p.nextAt || now < p.lockUntil) continue;
+      const q = currentQ(p); if (!q) continue;
+      const pick = Math.random() < 0.72 ? q.c : (q.c + 1 + Math.floor(Math.random() * (q.a.length - 1))) % q.a.length;
+      doAnswer(id, p.qi, pick);
+      p.nextAt = Date.now() + 2000 + Math.random() * 4500;
+    }
+    broadcast();
+  }, 400);
+
+  // ---- actions ----
+  function setStatus(s) { H.status = s; save(); screenKey = ""; render(); broadcast(); }
+  function resetPositions() { for (const p of Object.values(H.players)) Object.assign(p, { main: 0, detour: 0, qi: 0, correct: 0, wrong: 0, finishedAt: 0, lockUntil: 0, nextAt: 0, seed: Math.floor(Math.random() * 1e9) }); H.startAt = 0; setStatus("lobby"); }
+
+  // ---- render ----
+  let lastSec = null;
+  setInterval(() => { const s = Math.ceil((H.startAt - Date.now()) / 1000); if (H.status === "playing" && s !== lastSec && s >= -1) { lastSec = s; render(); } }, 200);
+
+  function render(barOnly) {
+    renderBar();
+    if (barOnly && screenKey) return;
+    const stage = document.getElementById("stage");
+    if (tab === "edit") return renderEditor(stage);
+    if (H.status === "lobby") return renderLobby(stage);
+    if (H.status === "finished") return renderPodium(stage);
+    renderRace(stage);
+  }
+  function renderBar() {
+    if (!document.getElementById("stage")) {
+      $app.innerHTML = `<div class="hostbar" id="bar"></div><div class="stage" id="stage"></div>`;
+    }
+    const nBots = Object.values(H.players).filter(p => p.bot).length;
+    const ctr = tab === "edit" ? "" :
+      H.status === "lobby" ? `<button class="btn sm" id="c-start">Lancia la missione</button><button class="btn ghost sm" id="c-bots">+ 5 bot di prova</button>${nBots ? `<button class="btn ghost sm" id="c-nobots">Togli i bot</button>` : ""}<button class="btn ghost sm" id="c-clear">Svuota equipaggio</button>` :
+      H.status === "playing" ? `<button class="btn sm" id="c-end">Chiudi e mostra il podio</button><button class="btn ghost sm" id="c-reset">Riporta tutti al via</button>` :
+      `<button class="btn sm" id="c-reset">Nuova partita, stesso equipaggio</button><button class="btn ghost sm" id="c-clear">Svuota equipaggio</button>`;
+    const sig = tab + H.status + nBots + net;
+    const bar = document.getElementById("bar");
+    if (bar.dataset.sig === sig) return; bar.dataset.sig = sig;
+    bar.innerHTML = `<div class="row"><div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="${tab === "show"}" data-tab="show">Proiettore</button>
+        <button class="tab" role="tab" aria-selected="${tab === "edit"}" data-tab="edit">Domande e regole</button></div>
+        <span class="label" title="Stato della connessione"><span class="netdot ${net}"></span> ${net === "on" ? "Online" : net === "err" ? "Problema di rete" : "Connessione…"}</span></div>
+      <div class="ctrls">${ctr}</div>`;
+    bar.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { if (tab === "edit" && draft) syncDraft(); tab = b.dataset.tab; screenKey = ""; render(); });
+    const on = (id, fn) => { const b = document.getElementById(id); if (b) b.onclick = fn; };
+    on("c-start", () => {
+      if (!Object.keys(H.players).length) return toast("Aspetta che salga almeno un astronauta (o aggiungi dei bot)");
+      if (!H.questions.length) return toast("Aggiungi prima le domande");
+      H.startAt = Date.now() + 5500; setStatus("playing");
+    });
+    on("c-bots", () => addBots(5));
+    on("c-nobots", () => { for (const k in H.players) if (H.players[k].bot) delete H.players[k]; save(); screenKey = ""; render(); broadcast(); });
+    on("c-end", () => setStatus("finished"));
+    on("c-reset", resetPositions);
+    on("c-clear", e => {
+      const b = e.currentTarget;
+      if (!b.dataset.arm) { b.dataset.arm = "1"; b.textContent = "Conferma: togli tutti"; b.classList.add("danger"); setTimeout(() => { if (b.isConnected) { b.dataset.arm = ""; b.textContent = "Svuota equipaggio"; b.classList.remove("danger"); } }, 4000); return; }
+      H.players = {}; save(); resetPositions(); toast("Equipaggio svuotato");
+    });
+  }
+  function setScreen(stage, key, html, after) { if (screenKey === key) return false; screenKey = key; stage.innerHTML = html(); after && after(); return true; }
+  function makeQR(el, size) {
+    if (!el) return;
+    if (isLocalFile) { el.innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#1A1F45;padding:${size > 200 ? 28 : 6}px;text-align:center;font:600 ${size > 200 ? 17 : 10}px/1.4 var(--f-body)">${size > 200 ? "Il QR code compare quando apri il gioco dal suo indirizzo online.<br><br>Ora sei sul file del computer: i telefoni non possono raggiungerlo." : "QR attivo solo online"}</div>`; return; }
+    if (!window.QRCode) { el.innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#333;padding:10px;text-align:center;font-size:13px">QR non disponibile: usa il link qui sotto</div>`; return; }
+    el.innerHTML = ""; new QRCode(el, { text: joinUrl(), width: size, height: size, colorDark: "#060918", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+  }
+  function renderLobby(stage) {
+    setScreen(stage, "lobby", () => `<div class="lobby">
+      <div><div class="qr qr-big" id="qr"></div>
+        <div class="joinurl">${esc(joinUrl())}</div>
+        <div class="row" style="margin-top:10px"><a class="btn ghost sm" href="${esc(joinUrl())}" target="_blank" rel="noopener">Apri come giocatore</a><button class="btn ghost sm" id="copy">Copia link</button></div></div>
+      <div style="min-width:0">
+        <div class="eyebrow">Strategy Day · Imbarco aperto</div>
+        <h1>Missione<br><b>Luxia</b></h1>
+        <p class="muted" style="max-width:56ch;font-size:18px;margin-top:14px">Inquadra il QR code, scegli il tuo nome e il colore della tuta. Ogni risposta giusta ti avvicina a Luxia; una sbagliata ti manda nella fascia di asteroidi e allunga la rotta.</p>
+        ${isLocalFile ? `<div class="warn">Stai aprendo il file dal computer: puoi provare da sola con <b>Apri come giocatore</b> o con i bot. Perché i telefoni possano entrare dal QR code, il file va messo online.</div>` : ""}
+        <div class="warn" id="netwarn" hidden></div>
+        <div class="count" id="lc"></div><div class="joined" id="joined"></div>
+      </div></div>`, () => {
+        makeQR(document.getElementById("qr"), 380);
+        document.getElementById("copy").onclick = () => navigator.clipboard?.writeText(joinUrl()).then(() => toast("Link copiato"), () => toast(joinUrl()));
+      });
+    const nw = document.getElementById("netwarn");
+    if (nw) { const bad = net !== "on" && Date.now() - bootAt > 8000; nw.hidden = !bad; nw.innerHTML = bad ? `<b>I telefoni non possono ancora collegarsi.</b> Questo computer non raggiunge il servizio di collegamento (${window.Peer ? "rete bloccata" : "libreria non caricata"}): prova un'altra rete o l'hotspot del telefono, o disattiva la VPN. Le prove con "Apri come giocatore" e con i bot funzionano comunque.` : ""; }
+    const list = plist().sort((a, b) => a.joinedAt - b.joinedAt);
+    document.getElementById("lc").innerHTML = list.length ? `<b>${list.length}</b> astronauti a bordo` : `In attesa del primo astronauta…`;
+    const j = document.getElementById("joined"), have = new Set([...j.children].map(c => c.dataset.id));
+    list.forEach(p => { if (!have.has(p.id)) { const d = document.createElement("div"); d.className = "j"; d.dataset.id = p.id; d.innerHTML = astro(p.color) + `<span>${esc(p.name)}</span>`; j.appendChild(d); } });
+    [...j.children].forEach(c => { if (!H.players[c.dataset.id]) c.remove(); });
+  }
+  function renderPodium(stage) {
+    const r = ranked().slice(0, 3);
+    setScreen(stage, "pod" + r.map(p => p.id).join(","), () => {
+      const place = (p, n) => p ? `<div class="step p${n}">${astro(p.color)}<div class="nm">${esc(p.name)}</div><div class="blk">${n}</div></div>` : "";
+      return `<div class="podium"><div class="eyebrow">Missione conclusa</div><h1>Il podio di Luxia</h1>
+        <div class="steps">${place(r[1], 2)}${place(r[0], 1)}${place(r[2], 3)}</div>${r.length ? "" : `<p class="muted">Nessun astronauta in gara.</p>`}</div>`;
+    });
+  }
+  function renderRace(stage) {
+    setScreen(stage, "race", () => `<div class="race">
+      <div class="race-main"><div><div class="eyebrow">Strategy Day · Gara in corso</div><h1>Missione <b>Luxia</b></h1></div>
+        <div class="board" id="board"></div><div id="ov"></div></div>
+      <aside class="side"><h2>Equipaggio <span class="mono muted" id="ncrew"></span></h2><ol class="crew" id="crew"></ol>
+        <div class="qr-mini"><div class="qr" id="qrm"></div><span>In ritardo? Inquadra e parti dal via.</span></div></aside></div>`,
+      () => { boardKey = ""; makeQR(document.getElementById("qrm"), 160); });
+    buildBoard(); placePlayers(); renderCrew();
+    const c = Math.ceil((H.startAt - Date.now()) / 1000);
+    const first = ranked().find(p => p.finishedAt);
+    document.getElementById("ov").innerHTML = c > 0 ? `<div class="overlay"><div><div class="eyebrow">Conto alla rovescia</div><div class="big-count mono">${c}</div></div></div>`
+      : first ? `<div class="banner">${esc(first.name)} è atterrato per primo su Luxia</div>` : "";
+  }
+  const loopR = () => Math.max(26, Math.min(40, 6 + H.detourLen * 9));
+  function buildBoard() {
+    const key = H.mainLen + ":" + H.detourLen, wrap = document.getElementById("board");
+    if (boardKey === key && wrap.firstChild) return; boardKey = key;
+    const d = "M 230 210 L 1360 210 A 135 135 0 0 1 1360 480 L 330 480 A 135 135 0 0 0 330 750 L 1380 750";
+    wrap.innerHTML = `<svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Percorso della gara">
+      <defs><radialGradient id="planet" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFF1C9"/><stop offset=".45" stop-color="#FFC857"/><stop offset="1" stop-color="#B9621E"/></radialGradient>
+      <radialGradient id="glow"><stop offset="0" stop-color="#FFC857" stop-opacity=".55"/><stop offset="1" stop-color="#FFC857" stop-opacity="0"/></radialGradient>
+      <radialGradient id="node" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#3B4BA0"/><stop offset="1" stop-color="#151C47"/></radialGradient></defs>
+      <path id="route" d="${d}" fill="none" stroke="#6EE7F9" stroke-opacity=".12" stroke-width="34" stroke-linecap="round"/>
+      <path d="${d}" fill="none" stroke="#6EE7F9" stroke-opacity=".7" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round"/>
+      <g id="loops"></g><g id="nodes"></g><g id="pls"></g></svg>`;
+    const path = wrap.querySelector("#route"), L = path.getTotalLength(), N = H.mainLen, R = loopR();
+    nodes = []; loopC = [];
+    for (let k = 0; k <= N; k++) { const pt = path.getPointAtLength(L * k / N); nodes.push({ x: pt.x, y: pt.y }); }
+    let lh = "", nh = "";
+    nodes.forEach((n, k) => {
+      if (k < N) {
+        const c = { x: n.x, y: n.y - (R + 46) }; loopC.push(c);
+        lh += `<line x1="${n.x}" y1="${n.y - 24}" x2="${c.x}" y2="${c.y + R}" stroke="#FF6B6B" stroke-opacity=".35" stroke-width="2" stroke-dasharray="3 5"/>
+          <circle id="loop-${k}" cx="${c.x}" cy="${c.y}" r="${R}" fill="none" stroke="#FF6B6B" stroke-opacity=".28" stroke-width="2" stroke-dasharray="4 6"/>`;
+        for (let s = 0; s < H.detourLen; s++) { const p = loopPt(k, s); lh += `<circle cx="${p.x}" cy="${p.y}" r="${3 + (s % 2)}" fill="#8A7A9E" opacity=".7"/>`; }
+      }
+      if (k === 0) nh += `<ellipse cx="${n.x}" cy="${n.y + 22}" rx="70" ry="16" fill="#6EE7F9" opacity=".18"/><circle cx="${n.x}" cy="${n.y}" r="34" fill="url(#node)" stroke="#6EE7F9" stroke-width="2"/>
+          <text x="${n.x}" y="${n.y + 72}" text-anchor="middle" fill="#6EE7F9" font-family="JetBrains Mono, monospace" font-size="18" letter-spacing="3">PARTENZA</text>`;
+      else if (k === N) nh += `<circle cx="${n.x + 40}" cy="${n.y}" r="170" fill="url(#glow)"/><circle cx="${n.x + 40}" cy="${n.y}" r="74" fill="url(#planet)"/>
+          <ellipse cx="${n.x + 40}" cy="${n.y}" rx="118" ry="22" fill="none" stroke="#FFE3A3" stroke-width="4" opacity=".7" transform="rotate(-14 ${n.x + 40} ${n.y})"/>
+          <text x="${n.x + 40}" y="${n.y + 118}" text-anchor="middle" fill="#FFC857" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="30" letter-spacing="6">LUXIA</text>`;
+      else nh += `<circle cx="${n.x}" cy="${n.y}" r="24" fill="url(#node)" stroke="#2E3A7A" stroke-width="2"/><text x="${n.x}" y="${n.y + 6}" text-anchor="middle" fill="#9AA3D1" font-family="JetBrains Mono, monospace" font-size="16" font-weight="700">${k}</text>`;
+    });
+    wrap.querySelector("#loops").innerHTML = lh; wrap.querySelector("#nodes").innerHTML = nh;
+  }
+  function loopPt(k, s) { const c = loopC[k], R = loopR(), a = Math.PI / 2 + (s + 1) * 2 * Math.PI / (H.detourLen + 1); return { x: c.x + R * Math.cos(a), y: c.y + R * Math.sin(a) }; }
+  function placePlayers() {
+    const g = document.querySelector("#pls"); if (!g) return;
+    const groups = new Map();
+    for (const p of plist()) {
+      const k = p.detour ? `d${Math.min(p.main, H.mainLen - 1)}:${Math.max(0, H.detourLen - p.detour)}` : `m${Math.min(p.main, H.mainLen)}`;
+      if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p);
+    }
+    const seen = new Set(), busyLoops = new Set();
+    for (const [k, list] of groups) {
+      let base;
+      if (k[0] === "m") { const m = +k.slice(1), n = nodes[m], fin = m === H.mainLen; base = { x: n.x + (fin ? 40 : 0), y: n.y - (fin ? 70 : 0) }; }
+      else { const [m, s] = k.slice(1).split(":").map(Number); base = loopPt(m, Math.min(s, H.detourLen - 1)); busyLoops.add(m); }
+      list.sort((a, b) => a.joinedAt - b.joinedAt);
+      const showName = list.length <= 3;
+      list.forEach((p, i) => {
+        seen.add(p.id);
+        const r = i ? 24 * Math.sqrt(i) : 0, a = i * 2.4;
+        const x = base.x + r * Math.cos(a) - 24, y = base.y + r * Math.sin(a) - 46;
+        let el = g.querySelector(`[data-id="${CSS.escape(p.id)}"]`);
+        if (!el) { el = document.createElementNS(NS, "g"); el.setAttribute("class", "pl"); el.dataset.id = p.id; el.style.transform = `translate(${nodes[0].x - 24}px,${nodes[0].y - 46}px)`; g.appendChild(el); }
+        const sig = p.color + "|" + p.name + "|" + showName;
+        if (el.dataset.sig !== sig) {
+          el.dataset.sig = sig;
+          el.innerHTML = `<g class="bob" style="animation-delay:${-(hashStr(p.id) % 3000)}ms"><svg width="48" height="57" viewBox="0 0 64 76">${astroBody(p.color)}</svg>
+            ${showName ? `<text x="24" y="72" text-anchor="middle" fill="#EEF1FF" font-family="Manrope, sans-serif" font-weight="800" font-size="15" paint-order="stroke" stroke="#060918" stroke-width="4">${esc(p.name.slice(0, 12))}</text>` : ""}</g>`;
+        }
+        requestAnimationFrame(() => { el.style.transform = `translate(${x}px,${y}px)`; });
+      });
+    }
+    g.querySelectorAll(".pl").forEach(el => { if (!seen.has(el.dataset.id)) el.remove(); });
+    document.querySelectorAll('[id^="loop-"]').forEach(lc => lc.setAttribute("stroke-opacity", busyLoops.has(+lc.id.slice(5)) ? ".9" : ".28"));
+  }
+  function renderCrew() {
+    const r = ranked();
+    document.getElementById("ncrew").textContent = r.length;
+    document.getElementById("crew").innerHTML = r.map((p, i) => {
+      const st = p.finishedAt ? `<span class="pill done">ARRIVATO</span>` : p.detour ? `<span class="pill detour">+${p.detour}</span>` : `<span class="pr">${p.main}/${H.mainLen}</span>`;
+      return `<li><span class="rk">${i + 1}</span>${astro(p.color, "mini")}<span class="nm">${esc(p.name)}${p.bot ? ' <span class="pill bot">BOT</span>' : ""}</span>${st}</li>`;
+    }).join("") || `<li style="grid-template-columns:1fr"><span class="muted">Nessuno a bordo</span></li>`;
+  }
+
+  // ---- question editor ----
+  function renderEditor(stage) {
+    if (!draft) draft = JSON.parse(JSON.stringify(H.questions.length ? H.questions : [{ q: "", a: ["", ""], c: 0 }]));
+    setScreen(stage, "edit", () => `<div class="admin">
+      <div><div class="eyebrow">Regia</div><h1>Domande e regole</h1><p class="muted" style="margin-top:6px">Tutto resta salvato in questo browser. Usa "Scarica" per tenerne una copia o spostarle su un altro computer.</p></div>
+      <div class="card stack"><h3>Regole del percorso</h3>
+        <div class="settings">
+          <div class="stack" style="gap:6px"><label class="label" for="s-main">Caselle fino a Luxia</label><input type="number" id="s-main" min="4" max="30" value="${H.mainLen}"></div>
+          <div class="stack" style="gap:6px"><label class="label" for="s-det">Caselle della deviazione</label><input type="number" id="s-det" min="1" max="6" value="${H.detourLen}"></div>
+          <div class="stack" style="gap:6px"><label class="label" for="s-pen">Secondi di attesa dopo un errore</label><input type="number" id="s-pen" min="0" max="15" value="${H.penaltySec}"></div>
+        </div>
+        <p class="muted">Ogni risposta giusta vale una casella. Una sbagliata manda l'astronauta in deviazione: deve rispondere bene ad altre domande (quante sono le caselle della deviazione) prima di tornare in rotta.</p>
+        <div><button class="btn sm" id="s-save">Salva regole</button></div></div>
+      <div class="row between"><h3 id="qcount"></h3><div class="row"><button class="btn ghost sm" id="q-add">Aggiungi domanda</button><button class="btn sm" id="q-save">Salva domande</button></div></div>
+      <div class="stack" id="qlist"></div>
+      <div class="row" style="justify-content:flex-end"><button class="btn ghost sm" id="q-add2">Aggiungi domanda</button><button class="btn sm" id="q-save2">Salva domande</button></div>
+      <div class="card stack"><h3>Importa ed esporta</h3>
+        <p class="muted">Il modo più comodo: scarica il modello, compilalo in Excel o Google Sheets (colonne: domanda, risposta A, risposta B, risposta giusta come A o B), salvalo come CSV e caricalo qui. Le domande caricate sostituiscono quelle attuali e vengono salvate subito.</p>
+        <div class="row"><button class="btn ghost sm" id="c-down">Scarica le domande per Excel (.csv)</button><label class="btn sm" for="j-file" tabindex="0">Carica file (.csv o .json)</label><input type="file" id="j-file" accept=".csv,.json,.txt,text/csv,application/json" hidden><button class="btn ghost sm" id="j-down">Scarica backup (.json)</button></div>
+        <textarea id="json" rows="8" class="mono" style="font-size:13px" placeholder="Oppure incolla qui le righe copiate da Excel (domanda, A, B, giusta) o il JSON"></textarea>
+        <div class="row"><button class="btn ghost sm" id="j-show">Mostra domande attuali</button><button class="btn sm" id="j-imp">Usa questo testo</button><button class="btn danger sm" id="j-sample">Ripristina le domande di esempio</button></div></div>
+    </div>`, () => {
+      drawQList();
+      const $ = id => document.getElementById(id);
+      $("s-save").onclick = () => {
+        const v = (id, lo, hi, d) => Math.max(lo, Math.min(hi, parseInt($(id).value, 10) || d));
+        H.mainLen = v("s-main", 4, 30, 12); H.detourLen = v("s-det", 1, 6, 3); H.penaltySec = v("s-pen", 0, 15, 3);
+        for (const p of Object.values(H.players)) { p.main = Math.min(p.main, H.mainLen); p.detour = Math.min(p.detour, H.detourLen); }
+        save(); broadcast(); toast("Regole salvate");
+      };
+      const add = () => { syncDraft(); draft.push({ q: "", a: ["", ""], c: 0 }); drawQList(); };
+      $("q-add").onclick = add; $("q-add2").onclick = add; $("q-save").onclick = saveQ; $("q-save2").onclick = saveQ;
+      $("j-show").onclick = () => { syncDraft(); $("json").value = JSON.stringify(draft, null, 2); };
+      const loadJSON = txt => {
+        txt = String(txt || "").replace(/^\uFEFF/, "").trim();
+        let list = null;
+        if (txt.startsWith("[")) {
+          try { list = JSON.parse(txt).map(two); }
+          catch { toast("Il file JSON non è valido: controlla virgole e parentesi"); return; }
+        } else list = parseCSV(txt);
+        list = (list || []).map(two).filter(q => q.q.trim() && q.a.every(Boolean));
+        if (!list.length) { toast("Non ho trovato domande nel file: controlla che ci siano le colonne domanda, A, B, giusta"); return; }
+        draft = list; drawQList(); saveQ();
+      };
+      function parseCSV(txt) {
+        const first = txt.split(/\r?\n/)[0];
+        const sep = [";", "\t", ","].sort((x, y) => first.split(y).length - first.split(x).length)[0];
+        const rows = []; let row = [], cell = "", q = false;
+        for (let i = 0; i < txt.length; i++) {
+          const ch = txt[i];
+          if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+          else if (ch === '"') q = true;
+          else if (ch === sep) { row.push(cell); cell = ""; }
+          else if (ch === "\n" || ch === "\r") { if (ch === "\r" && txt[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+          else cell += ch;
+        }
+        row.push(cell); rows.push(row);
+        return rows.filter(r => r.some(c => c.trim())).filter((r, i) => !(i === 0 && /domanda|question/i.test(r[0]))).map(r => {
+          const wide = r.length >= 6, a = (wide ? [1, 2, 3, 4] : [1, 2]).map(i => (r[i] || "").trim());
+          const g = (r[wide ? 5 : 3] || "").trim(); let c = "ABCD".indexOf(g.toUpperCase());
+          if (c < 0 && /^[1-4]$/.test(g)) c = +g - 1;
+          if (c < 0) c = Math.max(0, a.findIndex(x => x && x.toLowerCase() === g.toLowerCase()));
+          return { q: (r[0] || "").trim(), a, c };
+        });
+      }
+      $("j-imp").onclick = () => loadJSON($("json").value);
+      $("j-file").onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => loadJSON(r.result); r.readAsText(f); e.target.value = ""; };
+      $("c-down").onclick = () => {
+        syncDraft();
+        const cell = v => /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        const lines = ["Domanda;Risposta A;Risposta B;Giusta"].concat(draft.map(q => [q.q, q.a[0] || "", q.a[1] || "", "AB"[q.c] || "A"].map(cell).join(";")));
+        const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "domande-missione-luxia.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      };
+      $("j-down").onclick = () => { syncDraft(); const blob = new Blob([JSON.stringify(draft, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "domande-missione-luxia.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+      $("j-sample").onclick = e => { const b = e.currentTarget; if (!b.dataset.arm) { b.dataset.arm = 1; b.textContent = "Conferma: sostituisci tutto"; return; } draft = JSON.parse(JSON.stringify(SAMPLE)); drawQList(); b.dataset.arm = ""; b.textContent = "Ripristina le domande di esempio"; toast("Esempi pronti: premi Salva domande"); };
+    });
+  }
+  function drawQList() {
+    document.getElementById("qcount").textContent = `${draft.length} domande`;
+    const el = document.getElementById("qlist");
+    el.innerHTML = draft.map((q, n) => `<div class="card qedit">
+      <div class="row between"><span class="eyebrow">Domanda ${n + 1}</span><button class="btn danger sm" data-del="${n}">Elimina</button></div>
+      <textarea id="q-${n}-t" rows="2" placeholder="Testo della domanda">${esc(q.q)}</textarea>
+      <div class="opts">${[0, 1].map(i => `<label class="opt"><input type="radio" name="c-${n}" id="q-${n}-c${i}" ${q.c === i ? "checked" : ""} aria-label="Risposta ${"ABCD"[i]} è quella giusta">
+        <input type="text" id="q-${n}-a${i}" value="${esc(q.a[i] || "")}" placeholder="Risposta ${"ABCD"[i]}"></label>`).join("")}</div>
+      <span class="label">Il pallino selezionato indica la risposta giusta.</span></div>`).join("");
+    el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { syncDraft(); draft.splice(+b.dataset.del, 1); drawQList(); });
+  }
+  function syncDraft() {
+    draft = draft.map((q, n) => {
+      const t = document.getElementById(`q-${n}-t`); if (!t) return q;
+      return { q: t.value.trim(), a: [0, 1].map(i => document.getElementById(`q-${n}-a${i}`).value.trim()), c: [0, 1].find(i => document.getElementById(`q-${n}-c${i}`).checked) ?? 0 };
+    });
+  }
+  function saveQ() {
+    syncDraft();
+    const clean = draft.map(two).filter(q => q.q && q.a.every(Boolean));
+    const skipped = draft.length - clean.length;
+    H.questions = clean; save(); broadcast();
+    draft = JSON.parse(JSON.stringify(clean)); drawQList(); toast(`${clean.length} domande salvate` + (skipped ? ` · ${skipped} incomplete non salvate (servono domanda e due risposte)` : ""));
+  }
+
+  window.addEventListener("beforeunload", save);
+  startLocal(); render(); startPeer();
+  try { navigator.wakeLock?.request("screen").catch(() => {}); } catch {}
+}
+
+// ================= PLAYER (telefono) =================
+function Player() {
+  let pid = store.get("luxia.pid", null); if (!pid) { pid = "p-" + rid(10); store.set("luxia.pid", pid); }
+  let myName = store.get("luxia.name", ""), myColor = store.get("luxia.color", COLORS[Math.floor(Math.random() * COLORS.length)]);
+  let peer = null, conn = null, st = null, phase = "connecting", key = "";
+  let fb = null, fbUntil = 0, pending = null, startDeadline = 0, lockDeadline = 0, failCount = 0;
+
+  let bc = null, bcAlive = false;
+  if ("BroadcastChannel" in window) {
+    bc = new BroadcastChannel("luxia-" + GAME);
+    bc.onmessage = e => { const d = e.data; if (d && d.to === pid && d.m) { bcAlive = true; onData(d.m); } };
+  }
+  const canSend = () => (conn && conn.open) || bcAlive;
+  function send(m) {
+    m = { ...m, pid };
+    if (bc) try { bc.postMessage({ from: pid, m }); } catch {}
+    if (conn && conn.open) try { conn.send(m); } catch {}
+  }
+  function hello() { send({ t: "hello", name: myName || null, color: myColor }); }
+  function connect() {
+    if (!window.Peer) { if (!bc) { phase = "nolib"; render(); } return; }
+    try { peer && peer.destroy(); } catch {}
+    peer = new Peer(undefined, peerOpts());
+    peer.on("open", () => {
+      conn = peer.connect(GAME, { reliable: true });
+      conn.on("open", () => { failCount = 0; if (!bcAlive) conn.send({ t: "hello", pid, name: myName || null, color: myColor }); });
+      conn.on("data", onData);
+      conn.on("close", retry);
+      conn.on("error", retry);
+    });
+    peer.on("error", e => { if (bcAlive) return; if (e.type === "peer-unavailable") { phase = "nohost"; render(); } retry(); });
+    peer.on("disconnected", () => { try { peer.reconnect(); } catch {} });
+  }
+  let rT = null;
+  function retry() { if (bcAlive) return; clearTimeout(rT); failCount++; rT = setTimeout(connect, Math.min(8000, 1500 * failCount)); }
+  // keep alive when the phone wakes up
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !canSend()) connect(); });
+
+  function onData(m) {
+    if (!m || typeof m !== "object") return;
+    if (m.t === "fb") { fb = m; pending = null; fbUntil = Date.now() + Math.max(1100, m.lockMs || 0); setTimeout(render, Math.max(1100, m.lockMs || 0) + 30); render(); return; }
+    if (m.t === "state") { st = m; startDeadline = Date.now() + (m.startIn || 0); lockDeadline = Date.now() + (m.lockMs || 0); render(); }
+  }
+  function screen() {
+    if (!st) return phase;
+    if (!st.me) return "join";
+    if (st.status === "lobby") return "lobby";
+    if (st.status === "finished") return "over";
+    if (startDeadline > Date.now()) return "countdown";
+    if (st.me.finished && Date.now() >= fbUntil) return "landed";
+    return "play";
+  }
+  let lastS = "";
+  setInterval(() => { const s = screen(); if (s !== lastS || s === "countdown" || (s === "play" && fb)) { lastS = s; render(); } }, 250);
+
+  const head = `<div class="brand">MISSIONE <b>LUXIA</b></div>`;
+  function render() {
+    const s = screen();
+    const me = st && st.me;
+    const statusBar = () => {
+      const pct = Math.round(me.main / st.mainLen * 100);
+      const pill = me.finished ? `<span class="pill done">ATTERRATO</span>` : me.detour ? `<span class="pill detour">DEVIAZIONE · ${me.detour}</span>` : `<span class="pill main">IN ROTTA</span>`;
+      return `<div class="card stack" style="padding:16px"><div class="status"><div class="who">${astro(me.color, "mini")}<span>${esc(me.name)}</span></div>${pill}</div>
+        <div class="track"><i style="width:${pct}%"></i></div>
+        <div class="row between"><span class="label">Casella <span class="mono">${me.main}/${st.mainLen}</span></span><span class="label">Mancano <span class="mono">${st.mainLen - me.main + me.detour}</span> risposte giuste</span></div></div>`;
+    };
+    let k = s, html;
+    if (s === "connecting") html = `<div class="card center stack"><div class="astro-hero">${astro(myColor)}</div><h2>Mi collego alla base…</h2><p class="muted">Un attimo di pazienza.</p></div>`;
+    else if (s === "nohost") html = `<div class="card center stack"><div class="astro-hero">${astro(myColor)}</div><h2>La base non risponde</h2><p class="muted">Il gioco sullo schermo grande non è aperto o si sta ricollegando. Riprovo da solo tra qualche secondo.</p></div>`;
+    else if (s === "nolib") html = `<div class="card center stack"><h2>Connessione assente</h2><p class="muted">Controlla di essere online e ricarica la pagina.</p></div>`;
+    else if (s === "join") {
+      if (key === "join") return;
+      html = `<div class="card stack"><div class="eyebrow">Imbarco equipaggio</div><h2>Scegli il tuo nome da astronauta</h2>
+        <div class="astro-hero" id="jprev">${astro(myColor)}</div>
+        <label class="label" for="jname">Nome (max 14 caratteri)</label>
+        <input type="text" id="jname" maxlength="14" autocomplete="off" placeholder="es. Capitana Marghe" value="${esc(myName)}">
+        <div class="label">Colore della tuta</div>
+        <div class="swatches" id="jsw">${COLORS.map(c => `<button class="sw" style="background:${c}" data-c="${c}" aria-label="Colore ${c}" aria-pressed="${c === myColor}"></button>`).join("")}</div>
+        <button class="btn" id="jgo">Sali a bordo</button>
+        <p class="muted center">${st.n} astronauti già a bordo${st.status === "playing" ? " · la gara è in corso, partirai dal via" : ""}</p></div>`;
+    }
+    else if (s === "lobby") { k = "lobby" + st.n + me.color; html = `<div class="card center stack"><div class="astro-hero">${astro(me.color)}</div><div class="eyebrow">Sei a bordo</div><h2>Ciao ${esc(me.name)}</h2><p class="muted">Guarda lo schermo grande: la missione parte quando tutto l'equipaggio è pronto.</p><p class="count"><b>${st.n}</b> astronauti a bordo</p></div>`; }
+    else if (s === "countdown") { const c = Math.ceil((startDeadline - Date.now()) / 1000); k = "cd" + c; html = `<div class="card center stack"><div class="eyebrow">Conto alla rovescia</div><div class="big-count mono">${c}</div><p class="muted">Tieni il telefono in mano: appena parte arriva la prima domanda.</p></div>`; }
+    else if (s === "landed") { k = "landed" + me.rank; html = `${statusBar()}<div class="card center stack"><div class="astro-hero">${astro(me.color)}</div><div class="eyebrow">Atterraggio completato</div><h2>Sei arrivato su Luxia · ${me.rank}° posto</h2><p class="muted">${me.correct} risposte giuste, ${me.wrong} deviazioni. Goditi l'arrivo degli altri sullo schermo.</p></div>`; }
+    else if (s === "over") { k = "over" + me.rank; html = `<div class="card center stack"><div class="astro-hero">${astro(me.color)}</div><div class="eyebrow">Missione conclusa</div><h2>Classifica finale: ${me.rank}°</h2><p class="muted">Guarda il podio sullo schermo grande.</p></div>`; }
+    else if (s === "play") {
+      const showFb = fb && Date.now() < fbUntil;
+      if (!showFb) fb = null;
+      const q = showFb ? fb.q : st.q;
+      if (!q) { k = "noq"; html = `${statusBar()}<div class="card center stack"><h2>Nessuna domanda</h2><p class="muted">La regia deve ancora caricare le domande.</p></div>`; }
+      else {
+        const lockLeft = showFb ? Math.max(0, Math.ceil((fbUntil - Date.now()) / 1000)) : 0;
+        k = `play-${q.qi}-${showFb ? "fb" + lockLeft : "q"}-${pending ? "p" : ""}-${me.main}-${me.detour}`;
+        if (k === key) return;
+        const fbHtml = showFb ? (fb.ok
+          ? `<div class="fb ok">Risposta giusta! ${fb.detour ? "Ti avvicini alla rotta principale." : "Avanzi di una casella."}</div>`
+          : `<div class="fb ko">Sbagliato: deviazione nella fascia di asteroidi.${lockLeft > 1 ? ` Riparti tra <span class="mono">${lockLeft}</span>s` : ""}</div>`) : "";
+        html = `${statusBar()}<div class="card stack"><div class="eyebrow">Domanda ${q.qi + 1}</div><div class="question">${esc(q.text)}</div>
+          <div class="answers">${q.a.map((a, i) => {
+            let cls = ""; if (showFb) { if (i === fb.correct) cls = "right"; else if (i === fb.choice) cls = "wrong"; } else if (pending && pending.choice === i) cls = "sel";
+            return `<button class="ans ${cls}" data-i="${i}" ${showFb || pending ? "disabled" : ""}><span class="k">${"ABCD"[i] || i + 1}</span><span>${esc(a)}</span></button>`;
+          }).join("")}</div>${fbHtml}</div>`;
+      }
+    }
+    if (k === key && s !== "join") return;
+    key = k;
+    $app.innerHTML = `<div class="phone">${head}${html}</div>`;
+    if (s === "join") {
+      const jn = document.getElementById("jname");
+      document.getElementById("jsw").onclick = e => { const b = e.target.closest(".sw"); if (!b) return; myColor = b.dataset.c; document.querySelectorAll(".sw").forEach(x => x.setAttribute("aria-pressed", x.dataset.c === myColor)); document.getElementById("jprev").innerHTML = astro(myColor); };
+      const go = () => {
+        const name = jn.value.trim().slice(0, 14); if (!name) { jn.focus(); toast("Scrivi un nome per entrare"); return; }
+        if (!canSend()) { toast("Non sono ancora collegato alla base, riprova tra un attimo"); return; }
+        myName = name; store.set("luxia.name", name); store.set("luxia.color", myColor);
+        document.getElementById("jgo").disabled = true;
+        send({ t: "hello", name, color: myColor });
+        key = "";
+      };
+      document.getElementById("jgo").onclick = go; jn.onkeydown = e => { if (e.key === "Enter") go(); };
+    }
+    if (s === "play") document.querySelectorAll(".ans:not([disabled])").forEach(b => b.onclick = () => {
+      if (pending || !canSend()) return;
+      const choice = +b.dataset.i, q = st.q;
+      pending = { choice, q }; send({ t: "answer", qi: q.qi, choice });
+      const origOnData = null; // feedback arrives as "fb"; keep the question to show it
+      fbQ = q; render();
+      setTimeout(() => { if (pending && pending.q === q) { pending = null; render(); } }, 5000);
+    });
+  }
+  let fbQ = null;
+  const _onData = onData;
+  onData = function (m) { if (m && m.t === "fb") m.q = fbQ; _onData(m); };
+  render(); hello(); setTimeout(() => { if (!bcAlive) hello(); }, 800); connect();
+}
+</script>
+</body>
+</html>
